@@ -109,7 +109,7 @@ public class Sudoku {
 	    		for(int index: Cache.OPT[check]) {
 	    			comb |= cells[coords[index]];
 	    		}
-	    		/* Y ahora comprueba si el numero de valores posibles
+	    		/* Y ahora compruebo si el numero de valores posibles
 	    		 * es mayor o menor que el numero de celdas que he
 	    		 * combinado. Si es menor o igual, quiere decir que 
 	    		 * esos numeros tienen que estar en esas celdas y no
@@ -122,35 +122,43 @@ public class Sudoku {
 	    	}
 	    	/* Ahora voy a repetir el proceso con las combinaciones de
 	    	 * celdas con un elemento menos. Por ejemplo, si en este paso
-	    	 * he buscado combinaciones de 4 celdas con cuatro valores, 
+	    	 * he buscado combinaciones de 4 celdas con 4 valores, 
 	    	 * cuando termino busco combinaciones de 3 celdas con 3 valores.
              * 
              * Lo primero que hago es eliminar las celdas que no interesan.
              * Por ejemplo, si voy a buscar combinaciones de 3 celdas, no
              * tiene sentido que meta celdas con 4 opciones.
 	    	 */
-            int newlen = Cache.LENGTH[check];
-            int oldlen = 0;
-            for(; newlen != oldlen && newlen >= 2;) {
-                for(int opt: Cache.OPT[check]) {
-                    int offset = coords[opt];
+            int newcheck  = check;
+            int newlen    = Cache.LENGTH[newcheck]-1;
+            boolean match = false;
+            do {
+            	match = false;
+                for(int index: Cache.OPT[newcheck]) {
+                    int offset = coords[index];
                     // Si la celda tiene mas de <newlen> opciones:
-                    if(Cache.LENGTH[cells[offset]] >= newlen) {
+                    if(Cache.LENGTH[cells[offset]] > newlen) {
                         // entonces, la saco de la lista.
-                        check = check & ~Cache.MASK[opt];
+                        newcheck = newcheck & ~Cache.MASK[index];
+                        match    = true;
                     }
                 }
-                // y actualizo oldlen, newlen
-                oldlen = newlen;
-                newlen = Cache.LENGTH[check];
+                // y actualizo newlen
+                newlen = Cache.LENGTH[newcheck];
             }
-            /* Ahora que ya he eliminado bits de la mascara que no me
-             * van a servir, continuo con la recursion.
+            while(match && newlen >= 2);
+            if(newcheck != check) {
+                /* Si he reducido la lista de opciones, la tengo que procesar
+                 * para ver si la nueva lista reducida da algun resultado positivo
+                 */
+            	return combineLogic(coords, used, newcheck);
+            }
+            /* Si no he podido reducir ninguna celda, pues nada,
+             * vamos probando con subgrupos de un elemento menos que
+             * el actual.
              */
-	    	for(int opt: Cache.OPT[check]) {
-                int mask     = Cache.MASK[opt];
-	    		int newcheck = check & ~mask;
-	    		if(combineLogic(coords, used, newcheck))
+	    	for(int index: Cache.OPT[newcheck]) {
+	    		if(combineLogic(coords, used, newcheck & ~Cache.MASK[index]))
 	    			return true;
 	    	}
     	}
