@@ -129,36 +129,35 @@ public class Sudoku {
              * Por ejemplo, si voy a buscar combinaciones de 3 celdas, no
              * tiene sentido que meta celdas con 4 opciones.
 	    	 */
-            int newcheck  = check;
-            int newlen    = Cache.LENGTH[newcheck]-1;
-            boolean match = false;
+            int oldcheck  = check;
+            int newlen    = Cache.LENGTH[check]-1;
+            int oldlen    = 0;
             do {
-            	match = false;
-                for(int index: Cache.OPT[newcheck]) {
+                for(int index: Cache.OPT[check]) {
                     int offset = coords[index];
                     // Si la celda tiene mas de <newlen> opciones:
                     if(Cache.LENGTH[cells[offset]] > newlen) {
                         // entonces, la saco de la lista.
-                        newcheck = newcheck & ~Cache.MASK[index];
-                        match    = true;
+                        check = check & ~Cache.MASK[index];
                     }
                 }
                 // y actualizo newlen
-                newlen = Cache.LENGTH[newcheck];
+                oldlen = newlen;
+                newlen = Cache.LENGTH[check];
             }
-            while(match && newlen >= 2);
-            if(newcheck != check) {
+            while(oldlen != newlen && newlen > 1);
+            if(oldcheck != check) {
                 /* Si he reducido la lista de opciones, la tengo que procesar
                  * para ver si la nueva lista reducida da algun resultado positivo
                  */
-            	return combineLogic(coords, used, newcheck);
+            	return combineLogic(coords, used, check);
             }
             /* Si no he podido reducir ninguna celda, pues nada,
              * vamos probando con subgrupos de un elemento menos que
              * el actual.
              */
-	    	for(int index: Cache.OPT[newcheck]) {
-	    		if(combineLogic(coords, used, newcheck & ~Cache.MASK[index]))
+	    	for(int index: Cache.OPT[check]) {
+	    		if(combineLogic(coords, used, check & ~Cache.MASK[index]))
 	    			return true;
 	    	}
     	}
