@@ -314,8 +314,8 @@ public class Sudoku {
          * Lo vuelco separando los cuadros con una fila de guiones,
          * en forma de tabla ASCII-art.
          * */
-		StringBuilder buffer  = new StringBuilder();
-		StringBuilder sep     = new StringBuilder("+");
+		StringBuilder buffer = new StringBuilder();
+		StringBuilder sep    = new StringBuilder("+");
 		for(int i = 0; i < Cache.SIDE; i++) {
 			sep.append("---------------+");
 		}

@@ -11,6 +11,7 @@ public class CacheTest {
 	@Test
 	public void testTranslate() {
 		/** Comprueba que traduce las coordenadas adecuadamente
+		 * 
 		 *  Copio aqui para referencia la matriz de traducciones:
 		 *  
 		 *       0     1     2      3     4     5      6     7     8

@@ -62,7 +62,7 @@ public final class Cache {
     * col[X]:  Coordenadas de todas las celdas de la columna X.
     * sq[X]:   Coordenadas de todas las celdas de del cuadro X.
 
-    También tengo otras caches de coordenadas utiles:
+    Tambien tengo otras caches de coordenadas utiles:
 
     * neighbor[I]:  Coordenadas de todas las celdas vecinas de una dada
                     (misma fila, columna o cuadro)
@@ -95,13 +95,13 @@ public final class Cache {
 	public static final int VALS  = 1 << DIMS;
 
 	private static final int[] _buildIndex() {
-		/// Construye la tabla de traduccion (fila, columna) => celda
-		/* Construyo un array de la forma:
+		/** Construye la tabla de traduccion (fila, columna) => celda */
+		/* Utilizo un array de la forma:
 		 * {
 		 * 	{ 0, 1, 2 },
 		 *  { 3, 4, 5 },
 		 *  { 6, 7, 8 }
-		 *  }
+		 * }
 		 */
 		int[][] set = new int[SIDE][SIDE];
 		for(int i = 0; i < SIDE; i++) {
@@ -112,8 +112,8 @@ public final class Cache {
 		int idx = 0;
 		/* Y ahora construyo la lista de offsets: dada
 		 * una celda por sus coordenadas (fila, columna),
-		 * su posicion en el array es
-		 * out[fila * DIMS + columna]
+		 * su posicion en el array estara dada por este
+		 * array (sera out[fila * DIMS + columna])
 		 */
 		int[] out = new int[CELLS];
 		for(int[] xset: set) {
@@ -130,7 +130,7 @@ public final class Cache {
 	}
 
 	private static final int[] _buildMask() {
-		/// Construye las mascaras de bits de cada digito
+		/** Construye las mascaras de bits de cada digito */
 		/* Para cada valor "n" entre 1 y DIMS, la mascara que le va
 		 * a corresponder es 1 << (n-1). 
 		 */
@@ -142,7 +142,7 @@ public final class Cache {
 	}
 
 	private static final int[] _buildLength() {
-		/// Calcula el numero de bits a "1" en cada celda
+		/** Calcula el numero de bits a "1" en cada celda */
 		int[] out = new int[VALS];
 		for(int i = 0; i < VALS; i++) {
 			out[i] = Integer.bitCount(i);
@@ -151,7 +151,7 @@ public final class Cache {
 	}
 
 	private static final int[] _buildValue() {
-		/// Si la celda representa un valor unico, calcula ese valor. Si no, 0.
+		/** Si la celda representa un valor unico, calcula ese valor. Si no, 0 */
 		int[] out = new int[VALS];
 		for(int i = 0; i < VALS; i++) {
 			out[i] = 0;
@@ -167,7 +167,7 @@ public final class Cache {
 	}
 
 	private static final int[][] _buildRow() {
-		// Lista los indices de las celdas de cada fila
+		/** Lista los indices de las celdas de cada fila */
 		int[][] out = new int[DIMS][DIMS];
 		for(int row = 0; row < DIMS; row++) {
 			for(int col = 0; col < DIMS; col++) {
@@ -178,7 +178,7 @@ public final class Cache {
 	}
 
 	private static final int[][] _buildCol() {
-		// Lista los indices de las celdas de cada columna
+		/** Lista los indices de las celdas de cada columna */
 		int[][] out = new int[DIMS][DIMS];
 		for(int col = 0; col < DIMS; col++) {
 			for(int row = 0; row < DIMS; row++) {
@@ -189,7 +189,7 @@ public final class Cache {
 	}
 
 	private static final int[][] _buildSq() {
-		// Lista los indices de las celdas de cada cuadro
+		/** Lista los indices de las celdas de cada cuadro */
 		int[][] out = new int[DIMS][DIMS];
 		for(int sq = 0; sq < DIMS; sq++) {
 			for(int idx = 0; idx < DIMS; idx++) {
@@ -200,7 +200,7 @@ public final class Cache {
 	}
 
 	private static final int[][] _buildPos() {
-		// Devuelve la tripleta (cuadro, fila, columna) de cada celda
+		/** Devuelve la tripleta (cuadro, fila, columna) de cada celda */
 		int[][] out = new int[CELLS][3];
 		for(int i = 0; i < CELLS; i++) {
 			out[i][0] = i / DIMS;
@@ -211,10 +211,11 @@ public final class Cache {
 	}
 
 	private static final int[][][] _buildNeighbor() {
-		// Lista las celdas vecinas (mismo cuadro, fila o columna)
-		// por cada celda, devuelve tres arrays: uno con los
-		// indices de las celdas del mismo cuadro, otro con las
-		// de la misma fila, y otro con los de la misma columna.
+		/** Lista las celdas vecinas (mismo cuadro, fila o columna)
+		 * por cada celda, devuelve tres arrays: uno con los
+		 * indices de las celdas del mismo cuadro, otro con las
+		 * de la misma fila, y otro con los de la misma columna.
+		 */
 		int[][][] out = new int[CELLS][3][DIMS-1];
 		for(int i = 0; i < CELLS; i++) {
 			int[] pos      = POS[i];
@@ -235,7 +236,7 @@ public final class Cache {
 	}
 
 	private static final int[][] _buildOpt() {
-		/// Lista los indices de todos los bits a "1" de cada valor.
+		/** Lista los indices de todos los bits a "1" de cada valor */
 		int[][] out = new int[VALS][];
 		for(int i = 0; i < VALS; i++) {
 			out[i]  = new int[LENGTH[i]];

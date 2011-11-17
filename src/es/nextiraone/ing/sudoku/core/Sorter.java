@@ -10,7 +10,7 @@ public final class Sorter implements Comparator<Integer> {
 
     /** Comparador para ordenar las celdas del sudoku.
      * 
-     * Ordena las celdas en función de la cantidad de opciones
+     * Ordena las celdas en funcion de la cantidad de opciones
      * que le quedan a cada celda, de menos a mas.
      */
 

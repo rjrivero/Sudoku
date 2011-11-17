@@ -14,7 +14,7 @@ public class Cell {
 	protected Cell(int mask) {
         /** Construye la celda a partir de una mascara de bits.
          * 
-         * La máscara contiene bits a "1" en las posiciones que
+         * La mascara contiene bits a "1" en las posiciones que
          * corresponden a valores posibles en la celda. Por ejemplo,
          * si la celda puede tomar los valores 2, 3 y 5, la máscara es
          * 0x0016 = 0000 0000 0001 0110 (bits 1, 2 y 4)
