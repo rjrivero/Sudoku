@@ -8,8 +8,7 @@ import java.util.List;
 
 public class Solutions implements Iterator<Sudoku> {
 
-	/** Iterador sobre las soluciones de un Sudoku.
-     */
+	/** Iterador sobre las soluciones de un Sudoku. */
 
     // el sudoku raiz que estamos resolviendo
     private Sudoku root;
@@ -25,7 +24,7 @@ public class Solutions implements Iterator<Sudoku> {
     private int deadends;
 
     public Solutions(Sudoku root) {
-    	/// Construye el iterador
+    	/** Construye el iterador */
     	this.root     = root;
     	this.branch   = null;
     	this.values   = new ArrayList<Integer>();
@@ -47,11 +46,12 @@ public class Solutions implements Iterator<Sudoku> {
    	}
 
     public int getDeadends() {
+        /** Cuenta de ramas sin solucion que se han encontrado hasta ahora */
     	return deadends;
     }
 
     private void replaceBranch() {
-    	/// Busca un nuevo branch con soluciones.
+    	/** Busca un nuevo branch con soluciones */
 		if(branch != null) {
 			deadends += branch.deadends;
 		}
@@ -102,7 +102,6 @@ public class Solutions implements Iterator<Sudoku> {
 
 	@Override
 	public Sudoku next() {
-		/// Obtiene la siguiente solucion
 		/* Como a esta funcion se le llama despues de hasNext(),
 		 * se debe cumplir que:
 		 * - Si branch == null, es porque este sudoku no tiene celdas libres.

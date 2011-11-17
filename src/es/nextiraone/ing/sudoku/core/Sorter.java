@@ -8,6 +8,12 @@ import java.util.List;
 
 public final class Sorter implements Comparator<Integer> {
 
+    /** Comparador para ordenar las celdas del sudoku.
+     * 
+     * Ordena las celdas en función de la cantidad de opciones
+     * que le quedan a cada celda, de menos a mas.
+     */
+
 	private final int[] cells;
 		
 	public Sorter(Sudoku root) {
@@ -24,7 +30,12 @@ public final class Sorter implements Comparator<Integer> {
 	}
 	
 	public List<Integer> free() {
-		/// Devuelve una lista de indices de celdas cuyo valor no esta fijado.
+		/** Devuelve una lista de indices de celdas cuyo valor no esta fijado
+         * 
+         * La lista primero se randomiza, para asegurar que el orden de las
+         * celdas del mismo tamaño es aleatorio. Luego, se ordena de menos a
+         * mas opciones de celda.
+         */
 		/* La lista esta ordenada por numero de opciones que le
 		 * quedan a la celda, de menor a mayor.
 		 */

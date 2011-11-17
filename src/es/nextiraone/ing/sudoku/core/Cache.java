@@ -3,7 +3,7 @@ package es.nextiraone.ing.sudoku.core;
 
 public final class Cache {
 
-	/*
+	/**
     Cache de las diversas tablas que se necesitan para procesar sudokus.
 
     El origen de todas las tablas es una matriz que permite traducir

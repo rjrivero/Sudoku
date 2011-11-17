@@ -13,6 +13,8 @@ import java.util.List;
 
 public class Sudoku {
 
+    /** Objeto Sudoku! */
+
 	private int[] cells;
 	
 	public Sudoku() {
@@ -27,7 +29,7 @@ public class Sudoku {
 	}
 
 	protected int[] getCells() {
-		/// Devuelve una lista de celdas
+		/** Devuelve una lista de celdas */
 		return cells;
 	}
 
@@ -122,10 +124,33 @@ public class Sudoku {
 	    	 * celdas con un elemento menos. Por ejemplo, si en este paso
 	    	 * he buscado combinaciones de 4 celdas con cuatro valores, 
 	    	 * cuando termino busco combinaciones de 3 celdas con 3 valores.
+             * 
+             * Lo primero que hago es eliminar las celdas que no interesan.
+             * Por ejemplo, si voy a buscar combinaciones de 3 celdas, no
+             * tiene sentido que meta celdas con 4 opciones.
 	    	 */
-	    	for(int mask: Cache.MASK) {
+            int newlen = Cache.LENGTH[check];
+            int oldlen = 0;
+            for(; newlen != oldlen && newlen >= 2;) {
+                for(int opt: Cache.OPT[check]) {
+                    int offset = coords[opt];
+                    // Si la celda tiene mas de <newlen> opciones:
+                    if(Cache.LENGTH[cells[offset]] >= newlen) {
+                        // entonces, la saco de la lista.
+                        check = check & ~Cache.MASK[opt];
+                    }
+                }
+                // y actualizo oldlen, newlen
+                oldlen = newlen;
+                newlen = Cache.LENGTH[check];
+            }
+            /* Ahora que ya he eliminado bits de la mascara que no me
+             * van a servir, continuo con la recursion.
+             */
+	    	for(int opt: Cache.OPT[check]) {
+                int mask     = Cache.MASK[opt];
 	    		int newcheck = check & ~mask;
-	    		if(newcheck != check && combineLogic(coords, used, newcheck))
+	    		if(combineLogic(coords, used, newcheck))
 	    			return true;
 	    	}
     	}
@@ -146,7 +171,7 @@ public class Sudoku {
     }
 
     public void heuristic() throws DeadEndException {
-    	// Analiza todo el sudoku
+        /** Analiza estadisticamente el sudoku */
 		int[][][] groups = { Cache.SQ, Cache.ROW, Cache.COL };
     	boolean done = false;
     	do {
@@ -161,7 +186,7 @@ public class Sudoku {
     }
 
     protected void fix(int offset, int value) throws DeadEndException {
-    	/// Fija una celda a un valor dado, y propaga cambios
+    	/** Fija una celda a un valor dado, y propaga cambios */
     	int mask = Cache.MASK[value-1];
     	if((cells[offset] & mask) == 0) {
     		/* No se puede fijar este valor en la celda
@@ -262,7 +287,7 @@ public class Sudoku {
 	}
 	
 	private void rowToString(StringBuilder buffer, int idx) {
-		/// Vuelca una fila a texto
+		/** Vuelca una fila a texto */
 		/* Vuelco la fila separando los bloques de cada cuadro con
 		 * una linea horizontal, y marcando los elementos cuyo
 		 * valor no esta fijado con un <0>. Alineo los digitos para
@@ -284,8 +309,11 @@ public class Sudoku {
 	}
 	
 	public String toString() {
-		// vuelca el sudoku a texto.
-		/* Lo vuelco separando los cuadros con una fila de guiones. */
+		/** vuelca el sudoku a texto.
+         * 
+         * Lo vuelco separando los cuadros con una fila de guiones,
+         * en forma de tabla ASCII-art.
+         * */
 		StringBuilder buffer  = new StringBuilder();
 		StringBuilder sep     = new StringBuilder("+");
 		for(int i = 0; i < Cache.SIDE; i++) {
@@ -304,6 +332,14 @@ public class Sudoku {
 	}
 
 	public static Sudoku fromString(String data) throws DeadEndException {
+        /** Carga un sudoku de una cadena de texto.
+         * 
+         * En la cadena de texto, cada celda del sudoku debe estar
+         * representada por uno o varios digitos en ASCII. Las celdas pueden
+         * separarse unas de otras utilizando cualquier caracter que
+         * no sea un digito ascii: espacio,s comas, guiones, saltos de
+         * linea, etc.
+         */
 		List<Integer> values = new ArrayList<Integer>();
 		List<Fix> fixes      = new ArrayList<Fix>();
 		for(String value: data.split("[^0-9]+")) {
@@ -322,7 +358,7 @@ public class Sudoku {
 
 	private static String readFile(String path) throws IOException {
 		/** Leo el contenido del fichero a un String */
-		/** Esto es lo que odio de java... en python: open(path).read() */
+		/* Esto es lo que odio de java... en python: open(path).read() */
 		FileInputStream stream = new FileInputStream(new File(path));
 		try {
 			FileChannel fc = stream.getChannel();
@@ -336,6 +372,12 @@ public class Sudoku {
 	}
 
 	public static void main(String[] args) {
+        /** Rutina de prueba muy basica.
+         * 
+         * Carga un sudoku de un fichero de texto (especificado
+         * como primer argumento de linea de comandos), y genera un numero
+         * determinado de soluciones (especificado como segundo parametro).
+         */
 		if(args.length <= 1) {
 			System.err.println("Uso: sudoku <fichero de sudoku> [numero de resultados]\n");
 			System.exit(0);

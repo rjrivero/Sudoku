@@ -1,6 +1,8 @@
 package es.nextiraone.ing.sudoku.core;
 
 public class DeadEndException extends Exception {
+    
+    /** Se lanza cuando se comprueba que un sudoku no tiene solucion */
 
 	static final long serialVersionUID = 1;
 
