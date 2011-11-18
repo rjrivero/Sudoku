@@ -42,7 +42,7 @@ public class Sudoku {
 	}
 
 	public Cell getAt(int row, int col) {
-		return new Cell(cells[Cache.INDEX[row*Cache.DIMS + col]]);
+		return new Cell(cells[Cache.ROW[row][col]]);
 	}
 
 	private boolean drop(int[] offsets, int used, int mask) throws DeadEndException {
@@ -226,7 +226,7 @@ public class Sudoku {
             assert(row   >= 0 && row   <  Cache.DIMS);
             assert(col   >= 0 && col   <  Cache.DIMS);
             assert(value >= 1 && value <= Cache.DIMS);
-    		this.offset = Cache.INDEX[row*Cache.DIMS + col];
+    		this.offset = Cache.ROW[row][col];
     		this.value  = value;
     	}
     	
@@ -293,7 +293,7 @@ public class Sudoku {
 		return new CellList(cells, Cache.SQ[sq]);
 	}
 	
-	private void rowToString(StringBuilder buffer, int idx) {
+	private void rowToString(StringBuilder buffer, int row) {
 		/** Vuelca una fila a texto */
 		/* Vuelco la fila separando los bloques de cada cuadro con
 		 * una linea horizontal, y marcando los elementos cuyo
@@ -302,12 +302,15 @@ public class Sudoku {
 		 * 
 		 * |  3   <0>   1  | <0>  <0>   5  |  4    6   <0> |
 		 */
+		int[] coords = Cache.ROW[row];
+		int idx      = 0;
 		buffer.append("\n|");
 		for(int i = 0; i < Cache.SIDE; i++) {
 			for(int j = 0; j < Cache.SIDE; j++, idx++) {
 				String value = " <0> ";
-				if(Cache.VALUE[cells[idx]] != 0) {
-					value = String.format(" %2d  ", Cache.VALUE[cells[idx]]);
+				int cell     = cells[coords[idx]];
+				if(Cache.VALUE[cell] != 0) {
+					value = String.format(" %2d  ", Cache.VALUE[cell]);
 				}
 				buffer.append(value);
 			}
@@ -328,10 +331,10 @@ public class Sudoku {
 		}
 		buffer.append(sep);
 		sep.insert(0, "\n");
-		int idx = 0;
+		int row = 0;
 		for(int i = 0; i < Cache.SIDE; i++) {
-			for(int j = 0; j < Cache.SIDE; j++, idx += Cache.DIMS) {
-				rowToString(buffer, idx);
+			for(int j = 0; j < Cache.SIDE; j++, row++) {
+				rowToString(buffer, row);
 			}
 			buffer.append(sep);
 		}
