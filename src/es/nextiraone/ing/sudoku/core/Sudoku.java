@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+
 public class Sudoku {
 
     /** Objeto Sudoku! */
@@ -18,31 +19,36 @@ public class Sudoku {
 	private int[] cells;
 	
 	public Sudoku() {
+		/** Nuevo sudoku vacio */
 		cells = new int[Cache.CELLS];
 		for(int i = 0; i < Cache.CELLS; i++) {
-			cells[i] = Cache.ALL;
+			cells[i] = Cache.EMPTYCELL;
 		}
 	}
 
 	protected Sudoku(final Sudoku root) {
+		/** Copia de un sudoku existente */
 		this.cells = Arrays.copyOf(root.cells, root.cells.length);
 	}
 
 	protected int[] getCells() {
-		/** Devuelve una lista de celdas */
+		/** Devuelve la lista de celdas */
 		return cells;
 	}
 
 	public final int getSize() {
+		/** Devuelve el tamaño de lado del sudoku */
 		return Cache.DIMS;
 	}
 
 	protected int getAt(int offset) {
+		/** Devuelve la celda en el offset dado */
 		return cells[offset];
 	}
 
 	public Cell getAt(int row, int col) {
-		return new Cell(cells[Cache.ROW[row][col]]);
+		/** Devuelve la celda en la fila y columna dadas */
+		return new Cell(cells[Cache.getRow(row)[col]]);
 	}
 
 	private boolean drop(int[] offsets, int used, int mask) throws DeadEndException {
@@ -51,13 +57,13 @@ public class Sudoku {
 	    Elimina el valor como posible de las celdas especificadas,
 	    y recurre si alguna celda se ha reducido a un solo valor.
 	    
-	    - offsets es una lista de coordenadas, de tamaño <= Cache.DIMS.
+	    - offsets es una lista de coordenadas, de longitud <= this.getSize().
 	    - used es una bitmask, indicando las posiciones a procesar
 	      dentro del array offsets.
 	    - mask es una bitmask con los bits a quitar de las celdas.
 	    */
 		boolean changed = false;
-		for(int index: Cache.OPT[used]) {
+		for(int index: Cache.getOption(used)) {
 			int offset = offsets[index];
 			if((cells[offset] & mask) != 0) {
 				int update = cells[offset] & ~mask;
@@ -67,17 +73,21 @@ public class Sudoku {
 				}				
 				cells[offset] = update;
 				changed       = true;
-				if(Cache.LENGTH[update] == 1) {
+				if(Cache.getLength(update) == 1) {
 					/* la celda ha quedado fijada, quitamos
 					 * el valor de los vecinos.
 					 */
-					for(int[] cells: Cache.NEIGHBOR[offset]) {
-						/* Los neighbors de una celda en cada eje
-						 * (cuadro, fila y columna) son DIMS-1.
-						 * Cache.ALL >> 1 tiene los "DIMS-1" bits menos
-						 * significativos puestos a 1.
+					for(int[] set: Cache.getNeighbor(offset)) {
+						/* Me interesa que se revisen todas las celdas
+						 * vecinas de esta. Para indicarlo, tengo que
+						 * construir una mascara de bits co bits 
+						 * a "1" en todas las posiciones del array.
+						 * 
+						 * La forma mas facil de construir esa mascara
+						 * es calcular pow(2, set.length) - 1, o lo
+						 * que es lo mismo, (1 << set.length) - 1.
 						 */
-						drop(cells, Cache.ALL >> 1, update);
+						drop(set, (1 << set.length) - 1, update);
 					}
 				}
 			}
@@ -99,14 +109,14 @@ public class Sudoku {
         - check tiene los bits a "1" en las coordenadas que estamos
           validando en este pase.
         */
-    	if(Cache.LENGTH[check] >= 2) {
+    	if(Cache.getLength(check) >= 2) {
 	    	if(check != used) {
 	    		/* Proceso la combinacion actual, sumando el numero
 	    		 * de valores posibles que pueden tomar estas celdas
 	    		 * (es decir, los bits que tienen a 1)
 	    		 */
 	    		int comb = 0;
-	    		for(int index: Cache.OPT[check]) {
+	    		for(int index: Cache.getOption(check)) {
 	    			comb |= cells[coords[index]];
 	    		}
 	    		/* Y ahora compruebo si el numero de valores posibles
@@ -115,7 +125,7 @@ public class Sudoku {
 	    		 * esos numeros tienen que estar en esas celdas y no
 	    		 * pueden estar en el resto.
 	    		 */
-	    		if(Cache.LENGTH[comb] <= Cache.LENGTH[check]) {
+	    		if(Cache.getLength(comb) <= Cache.getLength(check)) {
 	    			if(drop(coords, used & ~check, comb))
 	    				return true;
 	    		}
@@ -130,20 +140,19 @@ public class Sudoku {
              * tiene sentido que meta celdas con 4 opciones.
 	    	 */
             int oldcheck  = check;
-            int newlen    = Cache.LENGTH[check]-1;
+            int newlen    = Cache.getLength(check) - 1;
             int oldlen    = 0;
             do {
-                for(int index: Cache.OPT[check]) {
-                    int offset = coords[index];
+                for(int index: Cache.getOption(check)) {
                     // Si la celda tiene mas de <newlen> opciones:
-                    if(Cache.LENGTH[cells[offset]] > newlen) {
+                    if(Cache.getLength(cells[coords[index]]) > newlen) {
                         // entonces, la saco de la lista.
-                        check = check & ~Cache.MASK[index];
+                        check = check & ~Cache.getMask(index);
                     }
                 }
                 // y actualizo newlen
                 oldlen = newlen;
-                newlen = Cache.LENGTH[check];
+                newlen = Cache.getLength(check);
             }
             while(oldlen != newlen && newlen > 1);
             if(oldcheck != check) {
@@ -156,8 +165,8 @@ public class Sudoku {
              * vamos probando con subgrupos de un elemento menos que
              * el actual.
              */
-	    	for(int index: Cache.OPT[check]) {
-	    		if(combineLogic(coords, used, check & ~Cache.MASK[index]))
+	    	for(int index: Cache.getOption(check)) {
+	    		if(combineLogic(coords, used, check & ~Cache.getMask(index)))
 	    			return true;
 	    	}
     	}
@@ -165,11 +174,12 @@ public class Sudoku {
     }
 
     private boolean heuristicOnGroup(int[][] group) throws DeadEndException {
+    	/** Analiza estadisticamente un grupo de filas, columnas o cuadros */
     	for(int[] coords: group) {
     		int used = 0;
-    		for(int i = 0; i < Cache.DIMS; i++) {
-    			if(Cache.LENGTH[cells[coords[i]]] > 1)
-    				used |= Cache.MASK[i];
+    		for(int idx = 0; idx < coords.length; idx++) {
+    			if(Cache.getLength(cells[coords[idx]]) > 1)
+    				used |= Cache.getMask(idx);
     		}
     		if(combineLogic(coords, used, used))
     			return true;
@@ -179,7 +189,7 @@ public class Sudoku {
 
     public void heuristic() throws DeadEndException {
         /** Analiza estadisticamente el sudoku */
-		int[][][] groups = { Cache.SQ, Cache.ROW, Cache.COL };
+		int[][][] groups = { Cache.getRows(), Cache.getCols(), Cache.getSquares() };
     	boolean done = false;
     	do {
     		done = true;
@@ -194,7 +204,7 @@ public class Sudoku {
 
     protected void fix(int offset, int value) throws DeadEndException {
     	/** Fija una celda a un valor dado, y propaga cambios */
-    	int mask = Cache.MASK[value-1];
+    	int mask = Cache.getMask(value-1);
     	if((cells[offset] & mask) == 0) {
     		/* No se puede fijar este valor en la celda
     		 * porque no esta dentro de las opciones
@@ -204,8 +214,8 @@ public class Sudoku {
     	/* fijamos la celda */
     	cells[offset] = mask;
     	/* y propagamos al resto de celdas */
-    	for(int[] coords: Cache.NEIGHBOR[offset]) {
-    		drop(coords, Cache.ALL >> 1, mask);
+    	for(int[] coords: Cache.getNeighbor(offset)) {
+    		drop(coords, (1 << coords.length) - 1, mask);
     	}
     }
 
@@ -213,23 +223,24 @@ public class Sudoku {
 
     	private int offset;
     	private int value;
-    	
+
     	public Fix(int offset, int value) {
-    		/// ATENCION! este offset esta en unidades de fila/columna, no cuadro/idx!
+    		/** Fija la celda en el offset dado al valor especificado */
     		assert(offset >= 0 && offset <  Cache.CELLS);
     		assert(value  >= 1 && value  <= Cache.DIMS);
-    		this.offset = Cache.INDEX[offset];
+    		this.offset = offset;
     		this.value  = value;
     	}
 
     	public Fix(int row, int col, int value) {
+    		/** Fija la celda en las coordenadas dadas al valor especificado */
             assert(row   >= 0 && row   <  Cache.DIMS);
             assert(col   >= 0 && col   <  Cache.DIMS);
-            assert(value >= 1 && value <= Cache.DIMS);
-    		this.offset = Cache.ROW[row][col];
+    		assert(value >= 1 && value  <= Cache.DIMS);
+    		this.offset = Cache.getOffset(row, col);
     		this.value  = value;
     	}
-    	
+
     	private int getOffset() {
     		return offset;
     	}
@@ -282,15 +293,15 @@ public class Sudoku {
 	}
 
 	public Iterator<Cell> getRow(int row) {
-		return new CellList(cells, Cache.ROW[row]);
+		return new CellList(cells, Cache.getRow(row));
 	}
 
 	public Iterator<Cell> getCol(int col) {
-		return new CellList(cells, Cache.COL[col]);
+		return new CellList(cells, Cache.getCol(col));
 	}
 	
-	public Iterator<Cell> getSq(int sq) {
-		return new CellList(cells, Cache.SQ[sq]);
+	public Iterator<Cell> getSquare(int square) {
+		return new CellList(cells, Cache.getSquare(square));
 	}
 	
 	private void rowToString(StringBuilder buffer, int row) {
@@ -302,19 +313,20 @@ public class Sudoku {
 		 * 
 		 * |  3   <0>   1  | <0>  <0>   5  |  4    6   <0> |
 		 */
-		int[] coords = Cache.ROW[row];
-		int idx      = 0;
 		buffer.append("\n|");
-		for(int i = 0; i < Cache.SIDE; i++) {
-			for(int j = 0; j < Cache.SIDE; j++, idx++) {
-				String value = " <0> ";
-				int cell     = cells[coords[idx]];
-				if(Cache.VALUE[cell] != 0) {
-					value = String.format(" %2d  ", Cache.VALUE[cell]);
-				}
-				buffer.append(value);
+		int idx = 0;
+		for(int offset: Cache.getRow(row)) {
+			int cell     = cells[offset];
+			String value = " <0> ";
+			if(Cache.getLength(cell) == 1) {
+				value = String.format(" %2d  ", Cache.getValue(cell));
 			}
-			buffer.append("|");
+			buffer.append(value);
+			idx += 1;
+			if(idx == Cache.SIDE) {
+				buffer.append("|");
+				idx = 0;
+			}
 		}
 	}
 	
@@ -332,8 +344,8 @@ public class Sudoku {
 		buffer.append(sep);
 		sep.insert(0, "\n");
 		int row = 0;
-		for(int i = 0; i < Cache.SIDE; i++) {
-			for(int j = 0; j < Cache.SIDE; j++, row++) {
+		for(int rowGroup = 0; rowGroup < Cache.SIDE; rowGroup++) {
+			for(int rowOffset = 0; rowOffset < Cache.SIDE; rowOffset++, row++) {
 				rowToString(buffer, row);
 			}
 			buffer.append(sep);
@@ -356,6 +368,12 @@ public class Sudoku {
 			if(value.length() > 0)
 				values.add(new Integer(value));
 		}
+		/* Aqui, para ser completamente independiente del orden, deberia
+		 * convertir el numero de objeto en coordenadas (fila, columna) y
+		 * luego llamar a Cache.getOffset()... pero aprovechando que 
+		 * sabemos que el orden es precisamente por fila y columna, me
+		 * salto ese paso.
+		 */
 		for(int i = 0; i < Math.min(Cache.CELLS, values.size()); i++) {
 			int value = values.get(i);
 			if(value != 0)

@@ -22,8 +22,8 @@ public final class Sorter implements Comparator<Integer> {
 
 	@Override
 	public int compare(Integer o1, Integer o2) {
-		final int len1 = Cache.LENGTH[cells[o1]];
-		final int len2 = Cache.LENGTH[cells[o2]];
+		final int len1 = Cache.getLength(cells[o1]);
+		final int len2 = Cache.getLength(cells[o2]);
 		if(len1 > len2) return  1;
 		if(len1 < len2) return -1;
 		return 0;
@@ -41,7 +41,7 @@ public final class Sorter implements Comparator<Integer> {
 		 */
 		List<Integer> free = new ArrayList<Integer>();
    		for(int i = 0; i < Cache.CELLS; i++) {
-   			if(Cache.LENGTH[cells[i]] > 1)
+   			if(Cache.getLength(cells[i]) > 1)
    				free.add(new Integer(i));
    		}
 		/* Randomizo los indices, para que el orden de los

@@ -35,7 +35,7 @@ public class Solutions implements Iterator<Sudoku> {
     	List<Integer> free = new Sorter(root).free();
    		if(free.size() > 0) {
    			pivot = free.get(0);
-   			for(int val: Cache.OPT[root.getAt(pivot)]) {
+   			for(int val: Cache.getOption(root.getAt(pivot))) {
    				values.add(val+1);
    			}
    			/* Randomizo los valores para que las soluciones

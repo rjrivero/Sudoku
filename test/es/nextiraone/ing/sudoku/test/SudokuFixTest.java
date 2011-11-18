@@ -15,9 +15,9 @@ public class SudokuFixTest extends SudokuBase {
 	private int val;
 
 	public void mySetUp() {
-		row  = size / 2;
-		col  = size / 3;
-		val  = size / 4 + 1;
+		row  = (int) Math.floor(Math.random() * size);
+		col  = (int) Math.floor(Math.random() * size);
+		val  = (int) (Math.floor(Math.random() * size) + 1);
 	}
 
 	@Test
