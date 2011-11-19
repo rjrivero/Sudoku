@@ -16,7 +16,7 @@ public final class Sorter implements Comparator<Integer> {
 
 	private final int[] cells;
 		
-	public Sorter(Sudoku root) {
+	public Sorter(final Sudoku root) {
 		this.cells = root.getCells();
 	}
 
@@ -53,4 +53,3 @@ public final class Sorter implements Comparator<Integer> {
    		return free;
 	}
 }
-

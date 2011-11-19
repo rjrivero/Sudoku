@@ -19,9 +19,14 @@ public class SudokuBaseTest extends SudokuBase {
 		}
 		for(int row = 0; row < size; row++) {
 			for(int col = 0; col < size; col++) {
-				cell = sudoku.getAt(row, col);
+				cell  = sudoku.getAt(row, col);
 				Assert.assertEquals(cell.getLength(), size);
-				Assert.assertArrayEquals(cell.getValues(), all);
+				int[] values = new int[cell.getLength()];
+				int index    = 0;
+				for(int value: cell.getValues()) {
+					values[index++] = value;
+				}
+				Assert.assertArrayEquals(values, all);
 			}
 		}
 	}

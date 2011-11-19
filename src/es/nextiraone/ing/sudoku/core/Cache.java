@@ -1,8 +1,6 @@
 package es.nextiraone.ing.sudoku.core;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 
 public final class Cache {
@@ -47,15 +45,11 @@ public final class Cache {
 	 * 
 	 * Por convencion, vamos a hacer que la representacion lineal del sudoku
 	 * sea por filas, asi que conocer la posicion de la celda
-	 * (fila: X, columna: Y) es muy facil: posicion = (X * DIMS +  Y)
+	 * (fila: X, columna: Y) es muy facil: posicion = (X * DIMS +  Y).
 	 * 
-	 *  Sin embargo, conocer la posicion de la celda (cuadro: X, indice: Y)
-	 *  requiere hacer otros calculos algo menos intuitivos.
-	 *  
-	 *  Esta clase sirve como contenedor para diversas caches y funciones que
-	 *  facilitan y aceleran este y otros calculos similares, y sobre todo
-	 *  permiten reutilizar objetos y no tener que andar haciendo new() en
-	 *  la mayoria de los casos.
+	 * Pero para aislar al resto de clases de la necesidad de conocer estos
+	 * detalles, y para facilitar y acelerar el procesamiento, las funciones
+	 * relativas a offsets, bits y mascaras se encapsulan todas en esta clase.
 	 */
 
 	// lado de cada cuadro del sudoku
@@ -69,14 +63,38 @@ public final class Cache {
 	public static final int VALS = 1 << DIMS;
 	// celda vacia (sin restringir) 
 	public static final int EMPTYCELL = VALS-1;
+	// mascara vacia (sin opciones)
+	public static final int EMPTYMASK = 0;
+
+	public static final int[] translate(final int coord1, final int coord2) {
+		/** Traduce coordenadas (fila, columna) a (cuadro, indice) y viceversa.
+		 * 
+		 * La traduccion es simetrica, asi que funciona en los dos sentidos:
+		 * si le pasas a la funcion un par (fila, columna) te devuelve un par
+		 * (cuadro, indice). Si le pasas (cuadro, indice) te devuelve (fila,
+		 * columna). 
+		 */
+		final int aGroup  = coord1 / SIDE;
+		final int aOffset = coord1 % SIDE;
+		final int bGroup  = coord2 / SIDE;
+		final int bOffset = coord2 % SIDE;
+		final int[] result = { aGroup * SIDE + bGroup, aOffset * SIDE + bOffset };
+		return result;
+	}
+
+	public static final int getOffset(final int row, final int col) {
+		/** Devuelve el offset de la celda dentro del array */
+		return row * DIMS + col;
+	}
 
 	private static final int[][] ROW = _buildRow();
 	private static final int[][] _buildRow() {
 		/** Precalcula el ofset de cada celda en funcion de (fila, columna) */
 		int[][] out = new int[DIMS][DIMS];
+		int offset  = 0;
 		for(int row = 0; row < DIMS; row++) {
-			for(int col = 0; col < DIMS; col++) {
-				out[row][col] = row*DIMS + col;
+			for(int col = 0; col < DIMS; col++, offset++) {
+				out[row][col] = offset;
 			}
 		}
 		return out;
@@ -88,7 +106,7 @@ public final class Cache {
 		int[][] out = new int[DIMS][DIMS];
 		for(int col = 0; col < DIMS; col++) {
 			for(int row = 0; row < DIMS; row++) {
-				out[col][row] = row*DIMS + col;
+				out[col][row] = Cache.getOffset(row, col);
 			}
 		}
 		return out;
@@ -98,17 +116,10 @@ public final class Cache {
 	private static final int[][] _buildSquare() {
 		/** Precalcula el ofset de cada celda en funcion de (cuadro, indice) */
 		int[][] out = new int[DIMS][DIMS];
-		int square  = 0;
-		for(int sqGroup = 0; sqGroup < SIDE; sqGroup++) { 
-			for(int sqOffset = 0; sqOffset < SIDE; sqOffset++, square++) {
-				int index = 0;
-				for(int idxGroup = 0; idxGroup < SIDE; idxGroup++) {
-					for(int idxOffset = 0; idxOffset < SIDE; idxOffset++, index++) {
-						int row = sqGroup*SIDE  + idxGroup;
-						int col = sqOffset*SIDE + idxOffset;
-						out[square][index] = row*DIMS + col;
-					}
-				}
+		for(int square = 0; square < DIMS; square++) {
+			for(int index = 0; index < DIMS; index++) {
+				int[] xlate = Cache.translate(square, index);
+				out[square][index] = Cache.getOffset(xlate[0], xlate[1]);
 			}
 		}
 		return out;
@@ -123,11 +134,12 @@ public final class Cache {
 		private final int square;
 		private final int index;
 		
-		public Coords(final int row, final int col, final int square, final int index) {
+		public Coords(final int row, final int col) {
 			this.row    = row;
 			this.col    = col;
-			this.square = square;
-			this.index  = index;
+			int[] xlate = Cache.translate(row, col);
+			this.square = xlate[0];
+			this.index  = xlate[1];
 		}
 		
 		public final int getRow()    { return row; }
@@ -146,23 +158,21 @@ public final class Cache {
 		 * offset en el sudoku linealizado.
 		 */
 		Coords[] out = new Coords[CELLS];
-		for(int idx = 0; idx < CELLS; idx++) {
-			int row    = idx / DIMS;
-			int col    = idx % DIMS;
-			int translated = SQUARE[row][col];
-			int square = translated / DIMS;
-			int index  = translated % DIMS;
-			out[idx] = new Coords(row, col, square, index);
+		int offset   = 0;
+		for(int row = 0; row < DIMS; row++) {
+			for(int col = 0; col < DIMS; col++, offset++) {
+				out[offset] = new Coords(row, col);
+			}
 		}
 		return out;
 	}
 
-	private static final int[] copy(int[] from, int start1, int end1, int start2, int end2) {
+	private static final int[] copy(final int[] from, int start1, int end1, int start2, int end2) {
 		/** Copia dos trozos de un array en otro nuevo.
 		 *
 		 * Para los dos trozos, start es inclusivo y end no.
 		 */
-		int[] to = new int[(end1-start1)+(end2-start2)];
+		int[] to = new int[(end1-start1) + (end2-start2)];
 		int base = 0;
 		for(; start1 < end1; start1++) {
 			to[base++] = from[start1];
@@ -203,17 +213,6 @@ public final class Cache {
 		return out;
 	}
 
-	private static final Map<Integer, Integer> VALUE = _buildValue();
-	private static final java.util.Map<Integer, Integer> _buildValue() {
-		/** Construye un mapa inverso de MASK */		
-		HashMap<Integer, Integer> out = new HashMap<Integer, Integer>();
-		for(int index = 0; index < DIMS; index++) {
-			int mask = Cache.getMask(index);
-			out.put(mask, index + 1);
-		}
-		return out;
-	}
-
 	protected static final int[] getRow(final int row) {
 		/** Devuelve las coordenadas de las celdas en la fila dada */
 		return ROW[row];
@@ -244,7 +243,7 @@ public final class Cache {
 		return SQUARE;
 	}
 
-	protected static final int getMask(final int value) {
+	protected static final int getMask(final int index) {
 		/** Devuelve la mascara de bits de un valor.
 		 *
 		 * Cada celda del sudoku puede tomar un valor dentro de
@@ -264,7 +263,35 @@ public final class Cache {
 		 * Pero empezando a contar desde 0. Es decir, si quieres la
 		 * mascara del numero "1", usaras getMask(0).
 		 */
-		return (1 << value);
+		return (1 << index);
+	}
+
+	protected static final int getMaskUpto(final int index) {
+		/** Devuelve una mascara que contiene todos los valores desde 0 hasta value
+		 * 
+		 * 0 es inclusivo, value no. 
+		 */
+		return (1 << index) - 1;
+	}
+
+	protected static final int getMaskWithout(final int mask, final int index) {
+		/** Quita de la mascara el bit en el indice dado por value */
+		return mask & (~(1 << index));
+	}
+
+	protected static final int getCellWithout(final int cell, final int options) {
+		/** Elimina los bits indicados por options de la celda */
+		return cell & ~options;
+	}
+
+	protected static final int getCellCombined(final int cell, final int options) {
+		/** Elimina los bits indicados por options de la celda */
+		return cell | options;
+	}
+
+	protected static final boolean doesCellContain(final int cell, final int options) {
+		/** Comprueba si la celda contiene los bits dados */
+		return ((cell & options) == options);
 	}
 
 	protected static final int getLength(final int cell) {
@@ -281,84 +308,121 @@ public final class Cache {
 		/** Devuelve las coordenadas de las celdas vecinas a la dada */
 		return NEIGHBOR[offset];
 	}
-	
+
 	public static final class OptionIterator implements Iterable<Integer>, Iterator<Integer> {
 		
-		/** Iterador sobre los posibles valores de una celda
-		 * 
-		 * Todo este cirio lo monto por no tener que hacer un new int[] cada
-		 * vez que alguien utiliza getOption... no se que sera peor.
-		 */
+		/// Iterador sobre los posibles valores de una celda
 
 		private int cell;
+		private final int offset;
 
-		// Cacheo los numeros enteros. Son invariantes y no quiero
-		// tener que ir creando objetos para nada.
-		private static final Integer[] INTEGERS = _buildIntegers();
-		private static final Integer[] _buildIntegers() {
-			Integer[] out = new Integer[Cache.DIMS];
-			for(int idx = 0; idx < Cache.DIMS; idx++) {
-				out[idx] = new Integer(idx);
-			}
-			return out;
+		public OptionIterator(final int cell) {
+			this.cell   = cell;
+			this.offset = 0;
 		}
 
-		public OptionIterator(int cell) {
-			this.cell = cell;
+		public OptionIterator(final int cell, final int offset) {
+			this.cell   = cell;
+			this.offset = offset;
 		}
 
 		@Override
-		public boolean hasNext() {
-			return (cell != 0);
+		public final boolean hasNext() {
+			return (cell != Cache.EMPTYMASK);
 		}
 
 		@Override
-		public Integer next() {
+		public final Integer next() {
 			int index = Integer.numberOfTrailingZeros(cell);
-			cell &= ~(1 << index);
-			return INTEGERS[index];
+			cell = Cache.getMaskWithout(cell, index);
+			return new Integer(index + offset);
 		}
 
 		@Override
-		public void remove() {
+		public final void remove() {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public Iterator<Integer> iterator() {
+		public final Iterator<Integer> iterator() {
 			return this;
 		}
 	}
 
 	protected static final OptionIterator getOption(final int cell) {
-		/** Devuelve los indices de los bits a 1 en la celda */
+		/**
+		 * Devuelve los identificadores de los diferentes valores que
+		 * puede tomar la celda.
+		 * 
+		 * Los indices empiezan a contar desde 0, es decir:
+		 * 
+		 * - Si el bit que representa el valor 1 esta encendido, devuelve "0"
+		 * - Si el bit que representa el valor 2 esta encendido, devuelve "1"
+		 * - Si el bit que representa el valor 3 esta encendido, devuelve "2"
+		 * ... etc ...
+		 */
 		return new OptionIterator(cell);
 	}
 
-	protected static final int getValue(final int mask) {
-		/** Devuelve el valor que corresponde a la mascara (contando desde 0)
+	protected static final OptionIterator getOption(final int cell, final int offset) {
+		/**
+		 * Devuelve los identificadores de los diferentes valores que
+		 * puede tomar la celda.
 		 * 
-		 * Solo se debe invocar si getLength(mask) == 1. Si
-		 * no, se producira un error.
+		 * Los indices empiezan a contar desde "offset", es decir:
+		 * 
+		 * - Si el bit que representa el valor 1 esta encendido, devuelve "offset+0"
+		 * - Si el bit que representa el valor 2 esta encendido, devuelve "offset+1"
+		 * - Si el bit que representa el valor 3 esta encendido, devuelve "offset+2"
+		 * ... etc ...
 		 */
-		return VALUE.get(mask);
+		return new OptionIterator(cell, offset);
 	}
 
-	public static final int[] translate(final int coord1, final int coord2) {
-		/** Traduce coordenadas (fila, columna) a (cuadro, indice) y viceversa.
+	protected static final int getValue(final int cell) {
+		/** Devuelve el valor que corresponde a la celda.
 		 * 
-		 * La traduccion es simetrica, asi que funciona en los dos sentidos:
-		 * si le pasas a la funcion un par (fila, columna) te devuelve un par
-		 * (cuadro, indice). Si le pasas (cuadro, indice) te devuelve (fila,
-		 * columna). 
+		 * Solo se debe invocar si la celda tiene un unico
+		 * valor (Cache.getLength(cell) == 1). Si no, el valor
+		 * devuelto sera incorrecto.
 		 */
-		final int   offset = SQUARE[coord1][coord2];
-		final int[] result = { offset / DIMS, offset % DIMS };
-		return result;
+		return Integer.numberOfTrailingZeros(cell) + 1;
 	}
 
-	public static final int getOffset(int row, int col) {
-		/** Traduce coordenadas (fila, columna) a offset en array */
-		return row * DIMS + col;
+	/*
+	 * Cosa rarisima que dejo para los anales de la historia:
+	 * 
+	 * Si en vez de usar el getOption anterior, uso esta funcion,
+	 * que aparentemente es equivalente, el programa falla!
+	 * 
+	 * De hecho, falla con un NullPointerException porque en
+	 * algun momento values = null. De hecho, el codigo que
+	 * esta marcado como "Dead Code", no es codigo muerto, se
+	 * ejecuta cuando se produce el fallo.
+	 * 
+	 * Eso si, solo se produce si en el println que hay dentro
+	 * del "codigo muerto" no uso la variable "cell". Si la
+	 * uso, el fallo desaparece.
+	 * 
+	 * Un bug de lo mas raro. De todas formas, no importa
+	 * porque la implementacion que he dejado, aunque parece mas
+	 * compleja, casi siempre me da mejor rendimiento.
+	 * 
+	protected static final int[] getOption(final int cell) {
+		/// Devuelve los indices de los bits a 1 en la celda
+		int[] values = new int[Cache.getLength(cell)];
+		int index    = 0;
+		int mask     = cell;
+		while(mask != 0) {
+			int option    = Integer.numberOfTrailingZeros(mask); 
+			values[index] = option;
+			mask          = Cache.getMaskWithout(mask,  option);
+			index        += 1;
+		}
+		if(values == null) {
+			System.out.println(String.format("values == null en %d pasos", index));
+		}
+		return values;
 	}
+	 */
 }

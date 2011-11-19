@@ -5,35 +5,21 @@ public class Cell {
 
     /** Celda del sudoku */
 
-	private int cell;
-	private int length;
-	private int value;
+	private final int cell;
+	private final int length;
+	private final int value;
 
-	protected Cell(int cell) {
-        /** Construye la celda a partir de una mascara de bits.
-         * 
-         * La mascara contiene bits a "1" en las posiciones que
-         * corresponden a valores posibles en la celda. Por ejemplo,
-         * si la celda puede tomar los valores 2, 3 y 5, la mascara es
-         * 0x0016 = 0000 0000 0001 0110 (bits 1, 2 y 4)
-         */
+	protected Cell(final int cell) {
+		/** inicializa la celda */
 		assert(cell >= 0 && cell < Cache.VALS);
-		this.cell = cell;
-		length    = Cache.getLength(cell);
-		value     = 0;
-		if(length == 1) {
-			value = Cache.getValue(cell);
-		}
+		this.cell   = cell;
+		this.length = Cache.getLength(cell);
+		this.value  = (length == 1) ? Cache.getValue(cell) : 0;
 	}
 
-	public int[] getValues() {
+	public Iterable<Integer> getValues() {
         /** Devuelve la lista de valores posibles de la celda */
-		int[] values  = new int[Cache.getLength(cell)];
-		int index     = 0;
-		for(int value: Cache.getOption(cell)) {
-			values[index++] = value+1;
-		}
-		return values;
+		return Cache.getOption(cell, 1);
 	}
 
 	public int getValue() {
@@ -42,13 +28,13 @@ public class Cell {
 	}
 
 	public int getLength() {
-        /** Devuelve la cantidad de valores posibles que le quedan a la celda */
+        /** Devuelve el numero de valores posibles que le quedan a la celda */
 		return length;
 	}
 
-	public boolean contains(int value) {
+	public boolean contains(final int value) {
         /** Comprueba si el valor esta ente los posibles de la celda */
 		assert(value > 0 && value <= Cache.DIMS);
-		return ((cell & Cache.getMask(value-1)) != 0);
+		return Cache.doesCellContain(cell, Cache.getMask(value - 1));
 	}
 }

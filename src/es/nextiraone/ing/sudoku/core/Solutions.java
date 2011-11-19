@@ -11,13 +11,13 @@ public class Solutions implements Iterator<Sudoku> {
 	/** Iterador sobre las soluciones de un Sudoku. */
 
     // el sudoku raiz que estamos resolviendo
-    private Sudoku root;
+    private final Sudoku root;
     // La rama de sudokus "hijos" que estamos explorando
     private Solutions branch;
     // el elemento pivote que hemos elegido para resolver
-    private int pivot;
+    private final int pivot;
     // los valores de pivote que quedan por probar
-    private List<Integer> values;
+    private final List<Integer> values;
     // true cuando ya no queden pivote, ni branches.
     private boolean done;
     // cantidad de rutas sin solucion que hemos encontrado
@@ -33,8 +33,9 @@ public class Solutions implements Iterator<Sudoku> {
     	/* busco celdas que no tengan todos los valores fijos.
     	 */
     	List<Integer> free = new Sorter(root).free();
-   		if(free.size() > 0) {
-   			pivot = free.get(0);
+    	this.pivot    = (free.size() == 0) ? -1 : free.get(0);
+    	// Si he encontrado alguna, utilizo sus valores como semillas
+    	if(pivot >= 0) {
    			for(int val: Cache.getOption(root.getAt(pivot))) {
    				values.add(val+1);
    			}
