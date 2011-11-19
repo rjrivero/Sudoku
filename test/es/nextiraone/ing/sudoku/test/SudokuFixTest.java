@@ -4,8 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import es.nextiraone.ing.sudoku.core.DeadEndException;
-import es.nextiraone.ing.sudoku.core.Sudoku;
-import es.nextiraone.ing.sudoku.core.Cache;
+import es.nextiraone.ing.sudoku.core.Fix;
 
 
 public class SudokuFixTest extends SudokuBase {
@@ -24,7 +23,7 @@ public class SudokuFixTest extends SudokuBase {
 	public void testFixDoesFix() throws DeadEndException {
 		/** Comprueba que Fix efectivamente fija las celdas
 		 */
-		sudoku.fix(new Sudoku.Fix(row, col, val));
+		sudoku.fix(new Fix(cache, row, col, val));
 		cell = sudoku.getAt(row, col);
 		Assert.assertEquals(cell.getLength(), 1);
 		Assert.assertEquals(cell.getValue(), val);
@@ -34,7 +33,7 @@ public class SudokuFixTest extends SudokuBase {
 	public void testFixDoesDrop() throws DeadEndException {
 		/** Comprueba que Fix elimina valores de las celdas adyacentes
 		 */
-		sudoku.fix(new Sudoku.Fix(row, col, val));
+		sudoku.fix(new Fix(cache, row, col, val));
 		// Compruebo que ha quitado el elemento de la fila
 		for(int i = 0; i < size; i++) {
 			if(i != col) {
@@ -52,12 +51,12 @@ public class SudokuFixTest extends SudokuBase {
 			}
 		}
 		// Compruebo que ha quitado el elemento del cuadro
-		int[] translation = Cache.translate(row, col);
+		int[] translation = cache.translate(row, col);
 		int square = translation[0];
 		int index  = translation[1];
 		for(int i = 0; i < size; i++) {
 			if(i != index) {
-				translation = Cache.translate(square, i);
+				translation = cache.translate(square, i);
 				row  = translation[0];
 				col  = translation[1];
 				cell = sudoku.getAt(row, col);
@@ -90,10 +89,10 @@ public class SudokuFixTest extends SudokuBase {
 		 *  A ver si el sudoku aplica la combinatoria necesaria
 		 *  para darse cuenta...
 		 */
-		sudoku.fix(new Sudoku.Fix(0, 3, 1));
-		sudoku.fix(new Sudoku.Fix(1, 6, 1));
-		sudoku.fix(new Sudoku.Fix(3, 0, 1));
-		sudoku.fix(new Sudoku.Fix(6, 1, 1));
+		sudoku.fix(new Fix(cache, 0, 3, 1));
+		sudoku.fix(new Fix(cache, 1, 6, 1));
+		sudoku.fix(new Fix(cache, 3, 0, 1));
+		sudoku.fix(new Fix(cache, 6, 1, 1));
 		cell = sudoku.getAt(2, 2);
 		Assert.assertEquals(cell.getLength(), 1);
 		Assert.assertEquals(cell.getValue(),  1);

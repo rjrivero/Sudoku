@@ -31,10 +31,11 @@ public class CacheTest {
     	 * 8    6.6 | 6.7 | 6.8 |  7.6 | 7.7 | 7.8 |  8.6 | 8.7 | 8.9 |
          *    -----------------  -----------------  -----------------
 		 */
+		Cache cache = new Cache(3);
 		int[] array_70 = { 7, 0 };
-		Assert.assertArrayEquals(Cache.translate(6, 3), array_70);
+		Assert.assertArrayEquals(cache.translate(6, 3), array_70);
 		int[] array_35 = { 3, 5 };
-		Assert.assertArrayEquals(Cache.translate(4, 2), array_35);
+		Assert.assertArrayEquals(cache.translate(4, 2), array_35);
 	}
 
 }

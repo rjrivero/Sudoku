@@ -14,16 +14,18 @@ public final class Sorter implements Comparator<Integer> {
      * que le quedan a cada celda, de menos a mas.
      */
 
+	private final Cache cache;
 	private final int[] cells;
 		
 	public Sorter(final Sudoku root) {
+		this.cache = root.getCache();
 		this.cells = root.getCells();
 	}
 
 	@Override
 	public int compare(Integer o1, Integer o2) {
-		final int len1 = Cache.getLength(cells[o1]);
-		final int len2 = Cache.getLength(cells[o2]);
+		final int len1 = cache.getLength(cells[o1]);
+		final int len2 = cache.getLength(cells[o2]);
 		if(len1 > len2) return  1;
 		if(len1 < len2) return -1;
 		return 0;
@@ -40,8 +42,8 @@ public final class Sorter implements Comparator<Integer> {
 		 * quedan a la celda, de menor a mayor.
 		 */
 		List<Integer> free = new ArrayList<Integer>();
-   		for(int i = 0; i < Cache.CELLS; i++) {
-   			if(Cache.getLength(cells[i]) > 1)
+   		for(int i = 0; i < cache.CELLS; i++) {
+   			if(cache.getLength(cells[i]) > 1)
    				free.add(new Integer(i));
    		}
 		/* Randomizo los indices, para que el orden de los

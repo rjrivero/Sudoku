@@ -36,7 +36,7 @@ public class Solutions implements Iterator<Sudoku> {
     	this.pivot    = (free.size() == 0) ? -1 : free.get(0);
     	// Si he encontrado alguna, utilizo sus valores como semillas
     	if(pivot >= 0) {
-   			for(int val: Cache.getOption(root.getAt(pivot))) {
+   			for(int val: root.getCache().getOption(root.getAt(pivot))) {
    				values.add(val+1);
    			}
    			/* Randomizo los valores para que las soluciones
@@ -51,7 +51,7 @@ public class Solutions implements Iterator<Sudoku> {
     	return deadends;
     }
 
-    private void replaceBranch() {
+    private final void replaceBranch() {
     	/** Busca un nuevo branch con soluciones */
 		if(branch != null) {
 			deadends += branch.deadends;
