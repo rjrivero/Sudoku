@@ -1,6 +1,7 @@
 package es.nextiraone.ing.sudoku.core;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 
@@ -8,10 +9,6 @@ public final class Cache {
 
 	/**
      * Cache de las diversas tablas que se necesitan para procesar sudokus.
-	 *
-     * El origen de todas las tablas es una matriz que permite traducir
-     * coordenas expresadas como (fila, columna) a coordenadas expresadas
-     * como (cuadro, indice), y viceversa.
 	 * 
      * En la representacion de abajo, estan numeradas las filas y columnas
      * del sudoku, y dentro de cada celda, esta el numero de cuadro y de
@@ -34,7 +31,7 @@ public final class Cache {
      * 8    6.6 | 6.7 | 6.8 |  7.6 | 7.7 | 7.8 |  8.6 | 8.7 | 8.9 |
      *     -----------------  -----------------  -----------------
 	 * 
-	 * Si compruebas la tabla, veras que la correspondencia entre coordenadas
+	 * Una curiosidad es que la correspondencia entre
 	 * (fila, columna) y (cuadro, indice) es simetrica, por ejemplo:
 	 * 
 	 * - En la (fila   3, columna 4) esta el     (cuadro 4, indice  1)
@@ -43,14 +40,10 @@ public final class Cache {
 	 * Es decir, si (fila X, columna Y) -> (cuadro A, indice B), entonces
 	 * (fila A, columna B) -> (cuadro X, indice Y).
 	 * 
-	 * En resumen, una sola matriz de traduccion serviria para
-	 * pasar de coordenadas de (fila, columna) a (cuadro, indice), y
-	 * viceversa.
-	 * 
-	 * El sudoku lo representaremos como una tabla lineal de DIMS * DIMS
-	 * enteros, y querremos conocer el indice dentro de esa tabla de la celda
-	 * en la posicion (fila, columna), o de la celda en la posicion
-	 * (cuadro, indice).
+	 * Curiosidades aparte, el sudoku lo representaremos como una tabla
+	 * lineal de DIMS * DIMS enteros, y querremos conocer el indice dentro
+	 * de esa tabla de la celda en la posicion (fila, columna), o de la
+	 * celda en la posicion (cuadro, indice).
 	 * 
 	 * Por convencion, vamos a hacer que la representacion lineal del sudoku
 	 * sea por filas, asi que conocer la posicion de la celda
@@ -60,7 +53,9 @@ public final class Cache {
 	 *  requiere hacer otros calculos algo menos intuitivos.
 	 *  
 	 *  Esta clase sirve como contenedor para diversas caches y funciones que
-	 *  facilitan y aceleran este y otros calculos similares.
+	 *  facilitan y aceleran este y otros calculos similares, y sobre todo
+	 *  permiten reutilizar objetos y no tener que andar haciendo new() en
+	 *  la mayoria de los casos.
 	 */
 
 	// lado de cada cuadro del sudoku
@@ -77,7 +72,7 @@ public final class Cache {
 
 	private static final int[][] ROW = _buildRow();
 	private static final int[][] _buildRow() {
-		/** Calcula el ofset de cada celda en funcion de (fila, columna) */
+		/** Precalcula el ofset de cada celda en funcion de (fila, columna) */
 		int[][] out = new int[DIMS][DIMS];
 		for(int row = 0; row < DIMS; row++) {
 			for(int col = 0; col < DIMS; col++) {
@@ -89,7 +84,7 @@ public final class Cache {
 
 	private static final int[][] COL = _buildCol();
 	private static final int[][] _buildCol() {
-		/** Calcula el ofset de cada celda en funcion de (columna, fila) */
+		/** Precalcula el ofset de cada celda en funcion de (columna, fila) */
 		int[][] out = new int[DIMS][DIMS];
 		for(int col = 0; col < DIMS; col++) {
 			for(int row = 0; row < DIMS; row++) {
@@ -101,7 +96,7 @@ public final class Cache {
 
 	private static final int[][] SQUARE = _buildSquare();
 	private static final int[][] _buildSquare() {
-		/** Calcula el ofset de cada celda en funcion de (cuadro, indice) */
+		/** Precalcula el ofset de cada celda en funcion de (cuadro, indice) */
 		int[][] out = new int[DIMS][DIMS];
 		int square  = 0;
 		for(int sqGroup = 0; sqGroup < SIDE; sqGroup++) { 
@@ -119,61 +114,6 @@ public final class Cache {
 		return out;
 	}
 
-	private static final int[] MASK = _buildMask();
-	private static final int[] _buildMask() {
-		/** Lista la mascara de bits de cada digito.
-		 *
-		 * Cada celda del sudoku puede tomar un valor dentro de
-		 * una lista de valores posibles, de 1 a DIMS. El
-		 * numero de valores que puede tomar una celda se va
-		 * reduciendo en funcion del valor de las otras celdas
-		 * de la misma fila, columna o cuadro.
-		 * 
-		 * Para llevar el control de los valores que todavia son
-		 * validos para una celda, usamos una mascara de bits. Cada
-		 * digito de 1 a DIMS esta representado por un bit, que
-		 * estara a "1" si la celda todavia puede tomar ese valor,
-		 * o a "0" si no puede.
-		 * 
-		 * Usando este mecanismo, una celda puede representarse
-		 * por un numero entero de "DIMS" bits, donde cada bit estara
-		 * a "1" o "0" en funcion de si la celda puede tomar o no
-		 * el valor correspondiente. 
-		 * 
-		 * Esta funcion construye un array que contiene las mascaras
-		 * de bits asignadas a cada numero de 1 a DIMS. La mascara
-		 * del numero "n" (con n: 1..DIMS) sera el elemento (n-1) del
-		 * array.
-		 */
-		int[] out = new int[DIMS];
-		for(int value = 0; value < DIMS; value++) {
-			out[value] = (1 << value);
-		}
-		return out;
-	}
-
-	private static final int[] LENGTH = _buildLength();
-	private static final int[] _buildLength() {
-		/** Construye una cache de "longitudes"
-		 * 
-		 * La "longitud" de una celda es el numero de valores
-		 * que todavia puede tomar, es decir, el numero de
-		 * bits a "1" que tiene.
-		 * 
-		 * Una celda se representa con un numero de "DIMS"
-		 * bits, asi que la centidad de celdas posibles esta
-		 * limitada a pow(2, DIMS).
-		 * 
-		 * Esta funcion construye una cache que almacena
-		 * la "longitud" de cada posible valor de una celda.
-		 */
-		int[] out = new int[VALS];
-		for(int cell = 0; cell < VALS; cell++) {
-			out[cell] = Integer.bitCount(cell);
-		}
-		return out;
-	}
-	
 	public static final class Coords {
 		
 		/** Coordenada de una celda dentro del sudoku */
@@ -237,14 +177,16 @@ public final class Cache {
 	private static final int[][][] _buildNeighbor() {
 		/** Lista las celdas vecinas (mismo cuadro, fila o columna)
 		 * 
-		 * Genera un array de tres dimensiones:
+		 * Guia para acceder al array devuelto:
 		 * 
-		 * - La primera dimension es el offset de cada celda dentro
-		 *   del sudoku linealizado (es decir, seria ROW[fila][columna], o
-		 *   COL[columna][fila], o SQUARE[cuadro][indice]).
-		 * - La segunda dimension es una de (cuadro, fila o columna)
-		 * - La tercera dimension son los vecinos de esa celda en
-		 *   su mismo cuadro, fila o columna.
+		 * - El primer indice se corresponde con el offset de la celda
+		 *   cuyos vecinos quieres encontrar
+		 * - El segundo indice es 0 para acceder a las vecinas del mismo
+		 *   cuadro, 1 para la misma fila, y 2 para la misma columna.
+		 *
+		 * Asi, por ejemplo,
+		 * NEIGHBOR[34][0] => Celdas en el mismo cuadro que la celda 34.
+		 * NEIGHBOR[12][1] => Celdas en la misma fila que la celda 12.
 		 */
 		int[][][] out = new int[CELLS][3][];
 		for(int offset = 0; offset < CELLS; offset++) {
@@ -261,23 +203,6 @@ public final class Cache {
 		return out;
 	}
 
-	private static final int[][] OPTION = _buildOption();
-	private static final int[][] _buildOption() {
-		/** Cachea los indices de todos los bits a "1" de cada posible celula */
-		int[][] out = new int[VALS][];
-		for(int cell = 0; cell < VALS; cell++) {
-			out[cell]  = new int[LENGTH[cell]];
-			int idx = 0;
-			for(int value = 0; value < DIMS; value++) {
-				if((cell & MASK[value]) != 0) {
-					out[cell][idx] = value;
-					idx += 1;
-				}
-			}
-		}
-		return out;
-	}
-
 	private static final Map<Integer, Integer> VALUE = _buildValue();
 	private static final java.util.Map<Integer, Integer> _buildValue() {
 		/** Construye un mapa inverso de MASK */		
@@ -289,63 +214,129 @@ public final class Cache {
 		return out;
 	}
 
-	protected static final int[] getRow(int row) {
+	protected static final int[] getRow(final int row) {
 		/** Devuelve las coordenadas de las celdas en la fila dada */
 		return ROW[row];
 	}
 
 	protected static final int[][] getRows() {
-		/** Devuelve las coordenadas de las celdas en la fila dada */
+		/** Devuelve las coordenadas de todas las filas */
 		return ROW;
 	}
 
-	protected static final int[] getCol(int col) {
+	protected static final int[] getCol(final int col) {
 		/** Devuelve las coordenadas de las celdas en la columna dada */
 		return COL[col];
 	}
 
 	protected static final int[][] getCols() {
-		/** Devuelve las coordenadas de las celdas en la columna dada */
+		/** Devuelve las coordenadas de todas las columnas */
 		return COL;
 	}
 
-	protected static final int[] getSquare(int square) {
+	protected static final int[] getSquare(final int square) {
 		/** Devuelve las coordenadas de las celdas en el cuadro dado */
 		return SQUARE[square];
 	}
 
 	protected static final int[][] getSquares() {
-		/** Devuelve las coordenadas de las celdas en el cuadro dado */
+		/** Devuelve las coordenadas de todos los cuadros */
 		return SQUARE;
 	}
 
-	protected static final int getMask(int value) {
-		/** Devuelve la mascara de bits del valor */
-		return MASK[value];
+	protected static final int getMask(final int value) {
+		/** Devuelve la mascara de bits de un valor.
+		 *
+		 * Cada celda del sudoku puede tomar un valor dentro de
+		 * una lista de valores posibles, de "1" a "DIMS". El
+		 * numero de valores que puede tomar una celda se va
+		 * reduciendo en funcion del valor de las otras celdas
+		 * de la misma fila, columna o cuadro.
+		 * 
+		 * Para llevar el control de los valores que todavia son
+		 * validos para una celda, usamos una mascara de bits. Cada
+		 * digito de "1" a "DIMS" esta representado por un bit, que
+		 * estara a "1" si la celda todavia puede tomar ese valor,
+		 * o a "0" si no puede. Usando este mecanismo, una celda
+		 * puede representarse por un numero entero de "DIMS" bits. 
+		 * 
+		 * Esta funcion devuelve la mascara de bits de un valor,
+		 * Pero empezando a contar desde 0. Es decir, si quieres la
+		 * mascara del numero "1", usaras getMask(0).
+		 */
+		return (1 << value);
 	}
 
-	protected static final int getLength(int cell) {
+	protected static final int getLength(final int cell) {
 		/** Devuelve el numero de opciones de la celda */
-		return LENGTH[cell];
+		return Integer.bitCount(cell);
 	}
 	
-	protected static final Coords getCoords(int offset) {
+	protected static final Coords getCoords(final int offset) {
 		/** Devuelve las coordenadas correspondientes al offset dado */
 		return COORDS[offset];
 	}
 	
-	protected static final int[][] getNeighbor(int offset) {
+	protected static final int[][] getNeighbor(final int offset) {
 		/** Devuelve las coordenadas de las celdas vecinas a la dada */
 		return NEIGHBOR[offset];
 	}
 	
-	protected static final int[] getOption(int cell) {
-		/** Descompone la mascara de la celda en diversas mascaras de un solo bit */
-		return OPTION[cell];
+	public static final class OptionIterator implements Iterable<Integer>, Iterator<Integer> {
+		
+		/** Iterador sobre los posibles valores de una celda
+		 * 
+		 * Todo este cirio lo monto por no tener que hacer un new int[] cada
+		 * vez que alguien utiliza getOption... no se que sera peor.
+		 */
+
+		private int cell;
+
+		// Cacheo los numeros enteros. Son invariantes y no quiero
+		// tener que ir creando objetos para nada.
+		private static final Integer[] INTEGERS = _buildIntegers();
+		private static final Integer[] _buildIntegers() {
+			Integer[] out = new Integer[Cache.DIMS];
+			for(int idx = 0; idx < Cache.DIMS; idx++) {
+				out[idx] = new Integer(idx);
+			}
+			return out;
+		}
+
+		public OptionIterator(int cell) {
+			this.cell = cell;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return (cell != 0);
+		}
+
+		@Override
+		public Integer next() {
+			int index = Integer.numberOfTrailingZeros(cell);
+			cell &= ~(1 << index);
+			return INTEGERS[index];
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Iterator<Integer> iterator() {
+			return this;
+		}
 	}
-	
-	protected static final int getValue(int mask) {
-		/** Devuelve el valor que corresponde a la mascara.
+
+	protected static final OptionIterator getOption(final int cell) {
+		/** Devuelve los indices de los bits a 1 en la celda */
+		return new OptionIterator(cell);
+	}
+
+	protected static final int getValue(final int mask) {
+		/** Devuelve el valor que corresponde a la mascara (contando desde 0)
 		 * 
 		 * Solo se debe invocar si getLength(mask) == 1. Si
 		 * no, se producira un error.
@@ -353,7 +344,7 @@ public final class Cache {
 		return VALUE.get(mask);
 	}
 
-	public static final int[] translate(int coord1, int coord2) {
+	public static final int[] translate(final int coord1, final int coord2) {
 		/** Traduce coordenadas (fila, columna) a (cuadro, indice) y viceversa.
 		 * 
 		 * La traduccion es simetrica, asi que funciona en los dos sentidos:
@@ -361,8 +352,8 @@ public final class Cache {
 		 * (cuadro, indice). Si le pasas (cuadro, indice) te devuelve (fila,
 		 * columna). 
 		 */
-		int   offset = SQUARE[coord1][coord2];
-		int[] result = { offset/DIMS, offset%DIMS };
+		final int   offset = SQUARE[coord1][coord2];
+		final int[] result = { offset / DIMS, offset % DIMS };
 		return result;
 	}
 

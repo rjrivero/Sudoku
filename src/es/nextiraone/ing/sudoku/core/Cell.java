@@ -1,7 +1,5 @@
 package es.nextiraone.ing.sudoku.core;
 
-import java.util.Arrays;
-
 
 public class Cell {
 
@@ -30,10 +28,10 @@ public class Cell {
 
 	public int[] getValues() {
         /** Devuelve la lista de valores posibles de la celda */
-		int[] options = Cache.getOption(cell);
-		int[] values  = Arrays.copyOf(options, options.length);
-		for(int index = 0; index < options.length; index++) {
-			values[index] += 1;
+		int[] values  = new int[Cache.getLength(cell)];
+		int index     = 0;
+		for(int value: Cache.getOption(cell)) {
+			values[index++] = value+1;
 		}
 		return values;
 	}
